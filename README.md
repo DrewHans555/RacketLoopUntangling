@@ -1,5 +1,5 @@
-# SchemeLoopUntangling
-UntanglingScheme is a program I wrote in Spring 2015 in the Scheme programming language.  
+# RacketLoopUntangling
+UntanglingRacket is a program I wrote in Spring 2015 in the Racket programming language.  
 
 The program takes in the trip code of a tangled loop and tells the user whether or not the tangled loop can be untangled.  
 Untangling is accomplished by first checking the legality of the trip code, searching and removing any type 1 and type 2 
@@ -23,7 +23,7 @@ the algorithm it becomes empty then it means that the tangle can be untangled.  
 type 1 or type 2 Reidemeister moves but still contains crossings after being put through the algorithm then the tangle is a 
 knot and cannot be untangled without cutting the loop.
 
-I tried to make using UntanglingScheme as simple and as straightforward as possible.  
+I tried to make using UntanglingRacket as simple and as straightforward as possible.  
 After launching the program the user must call the startProgram function and pass in the trip code to start the algorithm.  
 This can be accomplished by simply typing (startProgram ‘(<trip code goes here>)) and pressing the enter key.  
 
