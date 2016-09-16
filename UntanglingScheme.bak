@@ -1,0 +1,325 @@
+#lang racket/gui
+
+; Make a frame by instantiating the frame% class
+(define frame (new frame% [label "UntanglingScheme"]))
+ 
+; Make a static text message in the frame
+(define message (new message% 
+                     [parent frame]
+                     [label "Please enter your knot's tripcode into the box: "]
+                 )
+)
+
+; Make a text-field in the frame
+(define text-field (new text-field%
+                        (label "Knot Tripcode: ")
+                        (parent frame)
+                        (init-value "<tripcode goes here>")))
+ 
+; Holds the user input text
+(define input (send text-field get-editor))
+
+
+; Make a button in the frame
+(new button% [parent frame]
+             [label "Try Untangling"]
+             ; Callback procedure for a button click:
+             [callback (lambda (button event)
+                         (startProgram input))])
+
+; Show the frame by calling its show method
+(send frame show #t)
+
+
+;;; in the console type in (start) to begin the program ;;;
+(define startProgram
+  (λ (tripcode)
+    (cond
+     ;; [(isLegalTripcode? tripcode) 
+      ;; (cond
+         [(unknottable? tripcode) display "The knot can be untangled!"]
+         [(knot? tripcode) display "The knot cannot be untangled"]
+    ;;   )
+  ;;    ]
+      [else display "The tripcode you entered is not legal!"]
+    )
+  )
+)
+
+
+
+;;; returns the first atom of a list ;;;
+(define firstOf car)
+
+;;; returns the second atom of a list ;;;
+(define secondOf cadr)
+
+;;; returns everything but the first of a list ;;;
+(define restOf cdr)
+
+;;; returns the last element of a list ;;;
+(define (lastOf l)
+  (cond 
+      [(null? (cdr l)) (car l)]
+      [else (lastOf (cdr l))]
+  )
+)
+
+;;; returms all but the last element of a list ;;;
+(define (allButLastOf l)
+  (cond
+      [(null? (cdr l)) '()]
+      [else (cons (car l) (allButLastOf (cdr l)))]
+  )
+)
+
+;;; returns the firstOf the crossing pair (ex: (a o) returns a) ;;;
+(define crossingName
+  (λ (crossing)
+    (cond
+      [(null? crossing) '()]
+      [(pair? crossing) (firstOf crossing)]
+      [else '()]
+    )
+  )
+)
+
+;;; returns the secondOf the crossing pair (ex: (a o) returns o) ;;;
+(define crossingType
+  (λ (crossing)
+    (cond
+      [(null? crossing) '()]
+      [(pair? crossing) (secondOf crossing)]
+      [else '()]
+    )
+  )
+)
+
+;;; returns #t if a knot's tripcode can be untangled ;;;
+(define unknottable? 
+  (λ (tripcode)
+    (cond
+      [(null? tripcode) #t]
+      [(hasType1Move? tripcode) (unknottable? (removeType1Move tripcode))]
+      [(hasSpecialType1Move? tripcode) (unknottable? (removeSpecialType1Move tripcode))]
+      [(hasType2Move? tripcode) (unknottable? (removeType2Move tripcode))]
+      [(hasSpecialType2Move? tripcode) (unknottable? (removeSpecialType2Move tripcode))]
+      [else #f]
+    )
+  )
+)
+
+;;; returns #t if a knot's tripcode cannot be untangled ;;;
+(define knot? 
+  (λ (tripcode)
+    (cond
+      [(null? tripcode) #f]
+      [(hasType1Move? tripcode) (knot? (removeType1Move tripcode))]
+      [(hasSpecialType1Move? tripcode) (knot? (removeSpecialType1Move tripcode))]
+      [(hasType2Move? tripcode) (knot? (removeType2Move tripcode))]
+      [(hasSpecialType2Move? tripcode) (knot? (removeSpecialType2Move tripcode))]
+      [else #t]
+    )
+  )
+)
+
+;;; returns #t if any type1 Reidemeister moves are found in tripcode ;;;
+(define hasType1Move?
+  (λ (tripcode)
+    (cond
+      [(null? tripcode) #f]
+      [(equal? (length tripcode) 1) #f]
+      [(and (eqv? (crossingName (firstOf tripcode)) (crossingName (secondOf tripcode))) 
+            (not (eqv? (crossingType (firstOf tripcode)) (crossingType (secondOf tripcode))))
+       ) #t]
+      [else (hasType1Move? (restOf tripcode))]
+    )
+  )
+)
+
+;;; returns #t if the special type1 Reidemeister move is found in tripcode ;;;
+(define hasSpecialType1Move?
+  (λ (tripcode)
+    (cond
+      [(and (eqv? (crossingName (firstOf tripcode)) (crossingName (lastOf tripcode))) 
+            (not (eqv? (crossingType (firstOf tripcode)) (crossingType (lastOf tripcode))))
+       ) #t]
+      [else #f]
+    )
+  )
+)
+
+;;; returns #t if any type2 Reidemeister moves are found in tripcode ;;;
+(define hasType2Move?
+  (λ (tripcode)
+    (cond
+      [(null? tripcode) #f]
+      [(equal? (length tripcode) 1) #f]
+      [(and (and (not(equal? (crossingName (firstOf tripcode)) (crossingName (secondOf tripcode))))
+                 (equal? (crossingType (firstOf tripcode)) (crossingType (secondOf tripcode)))) 
+            (hasMatchingPair? (firstOf tripcode) (secondOf tripcode) (restOf (restOf tripcode)))
+       ) #t]
+      [else (hasType2Move? (restOf tripcode))]
+    )
+  )
+)
+
+;;; returns #t if the special type2 Reidemeister move is found in tripcode ;;;
+(define hasSpecialType2Move?
+  (λ (tripcode)
+    (cond
+      [(and (and (not (eqv? (crossingName (lastOf tripcode)) (crossingName (firstOf tripcode))))
+                 (eqv? (crossingType (lastOf tripcode)) (crossingType (firstOf tripcode))))
+            (hasMatchingPair? (lastOf tripcode) (firstOf tripcode) (allButLastOf (restOf tripcode)))
+       ) #t]
+      [else #f]
+    )
+  )
+)
+
+;;; removes the first type1 Reidemeister move that is found in tripcode ;;;
+(define removeType1Move 
+  (λ (tripcode)
+    (cond
+      [(null? tripcode) '()]
+      [(equal? (length tripcode) 1) tripcode]
+      [(and (eqv? (crossingName (firstOf tripcode)) (crossingName (secondOf tripcode))) 
+            (not (eqv? (crossingType (firstOf tripcode)) (crossingType (secondOf tripcode))))
+       ) (remove-member (firstOf tripcode) (remove-member (secondOf tripcode) tripcode))]
+      [else (cons (firstOf tripcode) (removeType1Move (restOf tripcode)))]
+    )
+  )
+)
+
+;;; removes the special type1 Reidemeister move that is found in tripcode ;;;
+(define removeSpecialType1Move 
+  (λ (tripcode)
+    (cond
+      [(and (eqv? (crossingName (firstOf tripcode)) (crossingName (lastOf tripcode))) 
+            (not (eqv? (crossingType (firstOf tripcode)) (crossingType (lastOf tripcode))))
+       ) (allButLastOf (restOf tripcode))]
+    )
+  )
+)
+
+;;; removes the first type2 Reidemeister move that is found in tripcode ;;;
+(define removeType2Move 
+  (λ (tripcode)
+    (cond
+      [(null? tripcode) '()]
+      [(equal? (length tripcode) 1) '()]
+      [(and (and (not (eqv? (crossingName (firstOf tripcode)) (crossingName (secondOf tripcode))))
+                 (eqv? (crossingType (firstOf tripcode)) (crossingType (secondOf tripcode))))
+            (hasMatchingPair? (firstOf tripcode) (secondOf tripcode) (restOf (restOf tripcode)))
+       ) (removeMatchingPair (firstOf tripcode) (secondOf tripcode) (restOf (restOf tripcode)))]
+      [else (cons (firstOf tripcode) (removeType2Move (restOf tripcode)))]
+    )
+  )
+)
+
+;;; removes the special type2 Reidemeister move that is found in tripcode ;;;
+(define removeSpecialType2Move 
+  (λ (tripcode)
+    (cond
+      [(and (and (not (eqv? (crossingName (lastOf tripcode)) (crossingName (firstOf tripcode))))
+                 (eqv? (crossingType (lastOf tripcode)) (crossingType (firstOf tripcode))))
+            (hasMatchingPair? (lastOf tripcode) (firstOf tripcode) (allButLastOf (restOf tripcode)))
+       ) (removeMatchingPair (lastOf tripcode) (firstOf tripcode) (allButLastOf (restOf tripcode)))]
+    )
+  )
+)
+
+;;; returns #t if a type2 move exists ;;;
+(define hasMatchingPair?
+  (λ (member1 member2 tripcode)
+    (cond
+      [(null? tripcode) #f]
+      [(equal? (length tripcode) 1) #f]
+      [(or (and (eqv? (crossingName member1) (crossingName (firstOf tripcode)))
+                (eqv? (crossingName member2) (crossingName (secondOf tripcode))))
+           (and (eqv? (crossingName member2) (crossingName (firstOf tripcode)))
+                (eqv? (crossingName member1) (crossingName (secondOf tripcode))))
+       ) #t]
+      [else (hasMatchingPair? member1 member2 (restOf tripcode))]
+    )
+  )
+)
+
+;;; helps removeType2Move by finding and removing the matching pair ;;;
+(define removeMatchingPair
+  (λ (member1 member2 tripcode)
+    (cond
+      [(null? tripcode) '()]
+      [(equal? (length tripcode) 1) '()]
+      [(or (and (eqv? (crossingName member1) (crossingName (firstOf tripcode)))
+                (eqv? (crossingName member2) (crossingName (secondOf tripcode))))
+           (and (eqv? (crossingName member2) (crossingName (firstOf tripcode)))
+                (eqv? (crossingName member1) (crossingName (secondOf tripcode))))
+       ) (restOf (restOf tripcode))]
+      [else (cons (firstOf tripcode) (removeMatchingPair member1 member2 (restOf tripcode)))]
+    )
+  )
+)
+                  
+
+
+;;; remove-member removes the first instance of member from the list l ;;;
+(define remove-member
+  (λ (member l)
+    (cond
+      ;;; if tripcode is empty return nothing
+      [(null? l) '()]
+      ;;; if member is firstOf tripcode return restOf tripcode
+      [(eqv? member (firstOf l)) (restOf l)]
+      ;;; search the restOf tripcode for member and when found return restOf tripcode
+      [else (cons 
+             (firstOf l) 
+             (remove-member member (restOf l)))]
+    )
+  )
+)
+
+;;; isLegalTripcode? looks for over-under and under-over pattern ;;;
+(define (isLegalTripcode? tc)
+  (cond
+    [(null? tc) #f]
+    [(has-ou-pattern tc) #f]
+    [else #t]
+  )
+)
+
+;;; looks for over under pattern in tripcode ;;;
+(define (has-ou-pattern l)
+  (cond
+    [(null? l) #f]
+    [(equal? (crossingType (firstOf l)) 'o) (check-for-o l)]
+    [else (check-for-u (restOf l))]
+  )
+)
+
+
+;;; check-for-o looks for o in the first sublist ;;;
+(define (check-for-o l)
+  (cond
+    [(null? l) #f]
+    [(equal? (crossingType (firstOf l)) 'o) 
+     (cond
+       [(equal? (length l) 1) #t]
+       [else (check-for-u (restOf l))]
+     )]
+    [else #f]
+  )
+)
+
+;;; check-for-u looks for u in the first sublist ;;;
+(define (check-for-u l)
+  (cond
+    [(null? l) #f]
+    [(equal? (crossingType (firstOf l)) 'u)
+     (cond
+       [(equal? (length l) 1) #t]
+       [else (check-for-o (restOf l))]
+     )]
+    [else #f]
+  )
+)
