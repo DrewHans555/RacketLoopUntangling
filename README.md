@@ -1,5 +1,5 @@
 # RacketLoopUntangling
-This repository contains code written ing Racket 6.1 for Blackburn College's Spring 2015 Computer Science 2 class CS212.
+This repository contains code written in Racket 6.1 for Blackburn College's Spring 2015 Computer Science 2 class CS212.
 
 UntanglingRacket is a program that takes in the trip code of a tangled loop and tells the user whether or not the tangled loop can be untangled.  Untangling is accomplished by first checking the legality of the trip code, searching and removing any type 1 and type 2 
 Reidemeister moves from the trip code, and then reporting the algorithm results back to the user.
