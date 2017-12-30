@@ -34,3 +34,10 @@ Or alternatively:
 > (define tripcode ‘((a o)(a u)(b o)(c o)(c u)(b u)(d o)(e o)(d u)(e u)))
 > (startProgram tripcode)
 > The knot can be untangled!
+
+### Prerequisites
+* Racket 6.1 or higher
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
